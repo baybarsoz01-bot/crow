@@ -1360,10 +1360,23 @@ document.getElementById('save-edit-profile-btn').addEventListener('click', async
 });
 
 // Sidebar'daki kendi profil resmine tıklandığında profilini aç
-document.getElementById('profile-picture').addEventListener('click', () => {
+document.getElementById('open-profile-btn').addEventListener('click', () => {
     if (currentUser && currentUser.nickname) {
         openUserProfile(currentUser.nickname);
     }
+});
+
+// Yeni eklenen ayarlar ve çıkış butonu
+document.getElementById('rp-app-settings-btn').addEventListener('click', () => {
+    document.getElementById('user-profile-overlay').style.display = 'none';
+    document.getElementById('app-settings-overlay').classList.add('visible');
+});
+
+document.getElementById('logout-btn-new').addEventListener('click', async () => {
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+        window.location.reload();
+    } catch(err) { console.error(err); }
 });
 
 // Sohbet mesajlarındaki avatar ve isimlere tıklanabilirlik ekleyelim

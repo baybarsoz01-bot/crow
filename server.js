@@ -42,9 +42,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ==============================
 // VERİTABANI BAĞLANTISI (MongoDB)
 // ==============================
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/crow')
+const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/crow';
+console.log('🔍 MONGO_URI tanımlı mı?', !!process.env.MONGO_URI);
+console.log('🔍 Bağlanılacak adres:', mongoURI.substring(0, 40) + '...');
+
+mongoose.connect(mongoURI)
     .then(() => console.log('✅ MongoDB veritabanına bağlanıldı.'))
-    .catch(err => console.error('❌ MongoDB bağlantı hatası:', err));
+    .catch(err => console.error('❌ MongoDB bağlantı hatası:', err.message));
 
 // Kullanıcı Şeması
 const userSchema = new mongoose.Schema({

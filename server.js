@@ -23,13 +23,26 @@ const io = new Server(server, { maxHttpBufferSize: 1e7 });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const MongoStore = require('connect-mongo');
+
+const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/crow';
+
 const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'crow_super_secret_key_123!',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // HTTPS kullanıyorsan true yap
+    store: MongoStore.create({
+        mongoUrl: mongoURI,
+        collectionName: 'sessions',
+        ttl: 14 * 24 * 60 * 60 // 14 gün boyunca açık tut
+    }),
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // Render'da HTTPS olduğu için secure true olmalı
+        maxAge: 1000 * 60 * 60 * 24 * 14 // 14 gün
+    }
 });
 app.use(sessionMiddleware);
+app.set('trust proxy', 1); // Render proxy kullandığı için cookie secure çalışması için gerekli
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -42,7 +55,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ==============================
 // VERİTABANI BAĞLANTISI (MongoDB)
 // ==============================
-const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/crow';
 console.log('🔍 MONGO_URI tanımlı mı?', !!process.env.MONGO_URI);
 console.log('🔍 Bağlanılacak adres:', mongoURI.substring(0, 40) + '...');
 

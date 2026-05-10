@@ -58,7 +58,18 @@ const userSchema = new mongoose.Schema({
     googleId: { type: String },
     facebookId: { type: String },
     avatar: { type: String, default: '👤' },
-    nameColor: { type: String, default: '#6366f1' }
+    nameColor: { type: String, default: '#6366f1' },
+    // --- YENİ PROFİL ALANLARI ---
+    bio: { type: String, default: '', maxLength: 200 },
+    karma: { type: Number, default: 0 },
+    postCount: { type: Number, default: 0 },
+    commentCount: { type: Number, default: 0 },
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    achievements: [{ id: String, name: String, icon: String, earnedAt: Date }],
+    socialLinks: [{ platform: String, url: String }],
+    profileVisibility: { type: String, enum: ['public', 'private'], default: 'public' },
+    createdAt: { type: Date, default: Date.now }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -125,6 +136,68 @@ app.post('/api/logout', (req, res) => {
         if (err) return res.status(500).json({error: 'Çıkış yapılamadı.'});
         res.json({message: 'Çıkış yapıldı.'});
     });
+});
+
+// ==============================
+// PROFİL ROTALARI (API)
+// ==============================
+app.get('/api/profile/:nickname', async (req, res) => {
+    try {
+        const user = await User.findOne({ nickname: req.params.nickname }, '-password -email -googleId -facebookId')
+                               .populate('followers', 'nickname avatar')
+                               .populate('following', 'nickname avatar');
+        if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+});
+
+app.put('/api/profile', async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Önce giriş yapmalısınız.' });
+    try {
+        const { bio, avatar, nameColor, socialLinks, profileVisibility } = req.body;
+        const updates = {};
+        if (bio !== undefined) updates.bio = bio;
+        if (avatar !== undefined) updates.avatar = avatar;
+        if (nameColor !== undefined) updates.nameColor = nameColor;
+        if (socialLinks !== undefined) updates.socialLinks = socialLinks;
+        if (profileVisibility !== undefined) updates.profileVisibility = profileVisibility;
+
+        const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true }).select('-password');
+        res.json({ message: 'Profil güncellendi', user });
+    } catch (err) {
+        res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+});
+
+app.post('/api/follow/:nickname', async (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Önce giriş yapmalısınız.' });
+    try {
+        const targetUser = await User.findOne({ nickname: req.params.nickname });
+        if (!targetUser) return res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+        if (targetUser._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ error: 'Kendinizi takip edemezsiniz.' });
+        }
+
+        const isFollowing = targetUser.followers.includes(req.user._id);
+        if (isFollowing) {
+            // Takipten Çık
+            targetUser.followers.pull(req.user._id);
+            await User.findByIdAndUpdate(req.user._id, { $pull: { following: targetUser._id } });
+            await targetUser.save();
+            res.json({ message: 'Takipten çıkıldı', isFollowing: false });
+        } else {
+            // Takip Et
+            targetUser.followers.push(req.user._id);
+            await User.findByIdAndUpdate(req.user._id, { $push: { following: targetUser._id } });
+            await targetUser.save();
+            res.json({ message: 'Takip ediliyor', isFollowing: true });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Sunucu hatası.' });
+    }
 });
 
 // ==============================

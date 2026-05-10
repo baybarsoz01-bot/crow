@@ -447,6 +447,76 @@
         </div>
     </div>
 
+    <!-- REDDİT TARZI KULLANICI PROFİL MODALI -->
+    <div id="user-profile-overlay" class="profile-overlay">
+        <div class="reddit-profile-panel">
+            <button id="close-user-profile-btn" class="profile-close">&times;</button>
+            
+            <div class="rp-header">
+                <div class="rp-avatar-wrapper">
+                    <div id="rp-avatar" class="rp-avatar-img">👤</div>
+                </div>
+                <div class="rp-user-info">
+                    <h2 id="rp-nickname" class="rp-nickname">kullaniciadi</h2>
+                    <p id="rp-bio" class="rp-bio">Burası kullanıcının bio alanı. Merhaba dünya!</p>
+                </div>
+                <button id="rp-action-btn" class="rp-follow-btn">Takip Et</button>
+            </div>
+
+            <div class="rp-stats-grid">
+                <div class="rp-stat-box">
+                    <div id="rp-karma" class="rp-stat-value">0</div>
+                    <div class="rp-stat-label">Karma</div>
+                </div>
+                <div class="rp-stat-box">
+                    <div id="rp-followers" class="rp-stat-value">0</div>
+                    <div class="rp-stat-label">Takipçi</div>
+                </div>
+                <div class="rp-stat-box">
+                    <div id="rp-age" class="rp-stat-value">0 gün</div>
+                    <div class="rp-stat-label">Crow Yaşı</div>
+                </div>
+            </div>
+
+            <div class="rp-section">
+                <h3 class="rp-section-title">KAZANIMLAR</h3>
+                <div id="rp-achievements" class="rp-achievements-list">
+                    <!-- Başarımlar JS ile buraya gelecek -->
+                    <div class="rp-achievement-empty">Henüz kazanım yok.</div>
+                </div>
+            </div>
+
+            <!-- Kendi profili ise görünen ayarlar -->
+            <div id="rp-settings-section" class="rp-section" style="display: none;">
+                <h3 class="rp-section-title">AYARLAR</h3>
+                <button id="rp-edit-profile-btn" class="rp-settings-btn">
+                    <span class="rp-btn-icon">⚙️</span>
+                    Profili Düzenle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROFİL DÜZENLEME MODALI -->
+    <div id="edit-profile-overlay" class="profile-overlay">
+        <div class="profile-panel">
+            <button id="close-edit-profile-btn" class="profile-close">&times;</button>
+            <h2 style="margin-bottom: 15px;">Profili Güncelle</h2>
+            <div class="profile-bio-section">
+                <label>Hakkımda (Bio)</label>
+                <textarea id="ep-bio-input" maxlength="200" rows="3" placeholder="Kendinden bahset..." style="width: 100%; padding: 8px; margin-bottom: 10px; resize: vertical; border-radius: 6px;"></textarea>
+                
+                <label>Avatar (Emoji veya Harf)</label>
+                <input type="text" id="ep-avatar-input" maxlength="2" placeholder="👤" style="width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 6px;">
+                
+                <label>İsim Rengi</label>
+                <input type="color" id="ep-color-input" value="#6366f1" style="margin-bottom: 15px;">
+                
+                <button id="save-edit-profile-btn" style="width: 100%; padding: 10px; background: var(--primary-color); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="main.js"></script>
 </body>

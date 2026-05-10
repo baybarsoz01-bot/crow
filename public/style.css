@@ -1747,5 +1747,159 @@ footer {
     background: #166fe5;
 }
 
+/* ==============================
+   REDDİT TARZI KULLANICI PROFİLİ
+   ============================== */
+.reddit-profile-panel {
+    background: var(--card-bg);
+    width: 90%;
+    max-width: 450px;
+    border-radius: 20px;
+    padding: 25px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow-y: auto;
+    max-height: 90vh;
+}
 
+.rp-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 25px;
+}
 
+.rp-avatar-wrapper {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: var(--bg-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--primary-color);
+    margin-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.rp-avatar-img {
+    font-size: 3rem;
+}
+
+.rp-nickname {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    color: var(--text-color);
+}
+
+.rp-bio {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin: 0 0 15px 0;
+    line-height: 1.4;
+}
+
+.rp-follow-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rp-follow-btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.rp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.rp-stat-box {
+    text-align: center;
+    background: rgba(0,0,0,0.05);
+    padding: 15px 10px;
+    border-radius: 12px;
+}
+
+[data-theme="dark"] .rp-stat-box {
+    background: rgba(255,255,255,0.05);
+}
+
+.rp-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.rp-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rp-section {
+    margin-bottom: 25px;
+}
+
+.rp-section-title {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 15px 0;
+}
+
+.rp-achievements-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.rp-achievement-empty {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.rp-settings-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rp-settings-btn:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+[data-theme="dark"] .rp-settings-btn:hover {
+    background: rgba(255,255,255,0.05);
+}

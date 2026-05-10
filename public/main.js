@@ -1250,3 +1250,130 @@ function renderNotifications() {
     updateNotifBadge();
 }
 
+// ==============================
+// REDDİT TARZI PROFİL YÖNETİMİ
+// ==============================
+let currentProfileNickname = '';
+
+const userProfileOverlay = document.getElementById('user-profile-overlay');
+const closeUserProfileBtn = document.getElementById('close-user-profile-btn');
+
+closeUserProfileBtn.addEventListener('click', () => {
+    userProfileOverlay.style.display = 'none';
+});
+
+async function openUserProfile(nickname) {
+    currentProfileNickname = nickname;
+    try {
+        const res = await fetch(`/api/profile/${nickname}`);
+        if (!res.ok) {
+            alert("Profil bulunamadı veya veritabanına bağlanılamadı.");
+            return;
+        }
+        const user = await res.json();
+        
+        // UI Güncelleme
+        document.getElementById('rp-nickname').innerText = user.nickname;
+        document.getElementById('rp-avatar').innerText = user.avatar || '👤';
+        document.getElementById('rp-bio').innerText = user.bio || 'Henüz bir bio eklenmemiş.';
+        document.getElementById('rp-karma').innerText = user.karma || 0;
+        document.getElementById('rp-followers').innerText = (user.followers || []).length;
+        
+        // Crow Yaşı hesaplama
+        const joinDate = new Date(user.createdAt);
+        const days = Math.floor((new Date() - joinDate) / (1000 * 60 * 60 * 24));
+        document.getElementById('rp-age').innerText = `${days} gün`;
+
+        // Takip Durumu
+        const followBtn = document.getElementById('rp-action-btn');
+        if (currentUser && currentUser.nickname === user.nickname) {
+            followBtn.style.display = 'none';
+            document.getElementById('rp-settings-section').style.display = 'block';
+        } else {
+            followBtn.style.display = 'block';
+            document.getElementById('rp-settings-section').style.display = 'none';
+            
+            // Kullanıcı bu kişiyi takip ediyor mu?
+            const isFollowing = user.followers.some(f => f.nickname === currentUser.nickname);
+            if (isFollowing) {
+                followBtn.innerText = 'Takibi Bırak';
+                followBtn.style.background = 'var(--glass-border)';
+            } else {
+                followBtn.innerText = 'Takip Et';
+                followBtn.style.background = 'var(--primary-color)';
+            }
+        }
+
+        userProfileOverlay.style.display = 'flex';
+    } catch (err) {
+        console.error(err);
+        alert("Profil yüklenirken bir hata oluştu.");
+    }
+}
+
+// Takip Et Butonu Dinleyicisi
+document.getElementById('rp-action-btn').addEventListener('click', async () => {
+    try {
+        const res = await fetch(`/api/follow/${currentProfileNickname}`, { method: 'POST' });
+        if (res.ok) {
+            openUserProfile(currentProfileNickname); // Profili yeniden yükle
+        } else {
+            const data = await res.json();
+            alert(data.error || 'Bir hata oluştu');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+});
+
+// Profili Düzenle Modalı
+const editProfileOverlay = document.getElementById('edit-profile-overlay');
+document.getElementById('rp-edit-profile-btn').addEventListener('click', () => {
+    editProfileOverlay.style.display = 'flex';
+    document.getElementById('ep-bio-input').value = document.getElementById('rp-bio').innerText;
+    document.getElementById('ep-avatar-input').value = document.getElementById('rp-avatar').innerText;
+});
+
+document.getElementById('close-edit-profile-btn').addEventListener('click', () => {
+    editProfileOverlay.style.display = 'none';
+});
+
+document.getElementById('save-edit-profile-btn').addEventListener('click', async () => {
+    const bio = document.getElementById('ep-bio-input').value;
+    const avatar = document.getElementById('ep-avatar-input').value || '👤';
+    const nameColor = document.getElementById('ep-color-input').value;
+
+    try {
+        const res = await fetch('/api/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bio, avatar, nameColor })
+        });
+
+        if (res.ok) {
+            editProfileOverlay.style.display = 'none';
+            openUserProfile(currentUser.nickname);
+        }
+    } catch(err) {
+        console.error(err);
+    }
+});
+
+// Sidebar'daki kendi profil resmine tıklandığında profilini aç
+document.getElementById('profile-picture').addEventListener('click', () => {
+    if (currentUser && currentUser.nickname) {
+        openUserProfile(currentUser.nickname);
+    }
+});
+
+// Sohbet mesajlarındaki avatar ve isimlere tıklanabilirlik ekleyelim
+document.getElementById('messages').addEventListener('click', (e) => {
+    const target = e.target.closest('.msg-avatar') || e.target.closest('.msg-user');
+    if (target) {
+        const msgDiv = target.closest('.message');
+        const nickname = msgDiv.querySelector('.msg-user').innerText;
+        if(nickname !== 'Sistem') {
+            openUserProfile(nickname);
+        }
+    }
+});

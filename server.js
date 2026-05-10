@@ -88,15 +88,24 @@ app.post('/api/register', async (req, res) => {
         const user = new User({ nickname, email, password: hashedPassword });
         await user.save();
         res.status(201).json({message: 'Kayıt başarılı! Lütfen giriş yapın.'});
-    } catch (err) { res.status(500).json({error: 'Sunucu hatası.'}); }
+    } catch (err) { 
+        console.error("Kayıt Hatası:", err);
+        res.status(500).json({error: 'Sunucu hatası.'}); 
+    }
 });
 
 app.post('/api/login', (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
-        if (err) return res.status(500).json({error: 'Sunucu hatası'});
+        if (err) {
+            console.error("Giriş Hatası:", err);
+            return res.status(500).json({error: 'Sunucu hatası'});
+        }
         if (!user) return res.status(401).json({error: info.message});
         req.logIn(user, (err) => {
-            if (err) return res.status(500).json({error: 'Oturum açılamadı'});
+            if (err) {
+                console.error("Oturum Açma Hatası:", err);
+                return res.status(500).json({error: 'Oturum açılamadı'});
+            }
             res.json({ message: 'Giriş başarılı', user: { nickname: user.nickname, avatar: user.avatar } });
         });
     })(req, res, next);

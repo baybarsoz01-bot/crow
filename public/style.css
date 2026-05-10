@@ -1732,10 +1732,20 @@ footer {
     transform: translateY(-2px);
 }
 .oauth-btn.google {
-    color: var(--text-color);
+    background: #ffffff;
+    color: #000000;
+}
+.oauth-btn.google:hover {
+    background: #f1f1f1;
 }
 .oauth-btn.facebook {
-    color: #1877F2;
+    background: #1877F2;
+    color: #ffffff;
+    border: none;
 }
+.oauth-btn.facebook:hover {
+    background: #166fe5;
+}
+
 
 

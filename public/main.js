@@ -76,18 +76,90 @@ async function loadCustomRooms() {
 }
 
 // ==============================
-// 1. GİRİŞ AKIŞI
+// 1. GERÇEK GİRİŞ AKIŞI (AUTH)
 // ==============================
-joinBtn.addEventListener('click', doLogin);
-nicknameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') doLogin(); });
+const authTabs = document.querySelectorAll('.auth-tab');
+const authForm = document.getElementById('auth-form');
+const authNickname = document.getElementById('auth-nickname');
+const authEmail = document.getElementById('auth-email');
+const authPassword = document.getElementById('auth-password');
+const registerFields = document.getElementById('register-fields');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+const authError = document.getElementById('auth-error');
 
-async function doLogin() {
-    const nickname = nicknameInput.value.trim();
-    if (!nickname) return;
+let isLoginMode = true;
 
-    myNickname = nickname;
-    sidebarNickname.innerText = nickname;
-    userAvatar.innerText = nickname.charAt(0).toUpperCase();
+// Sekme Geçişleri
+authTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        authTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        isLoginMode = tab.getAttribute('data-tab') === 'login';
+        
+        registerFields.style.display = isLoginMode ? 'none' : 'block';
+        authNickname.required = !isLoginMode;
+        authSubmitBtn.innerText = isLoginMode ? 'Giriş Yap' : 'Kayıt Ol';
+        authError.style.display = 'none';
+    });
+});
+
+// Form Gönderimi (Giriş/Kayıt)
+authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    authError.style.display = 'none';
+    const email = authEmail.value;
+    const password = authPassword.value;
+    const nickname = authNickname.value;
+
+    const endpoint = isLoginMode ? '/api/login' : '/api/register';
+    const body = isLoginMode ? { email, password } : { nickname, email, password };
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            authError.innerText = data.error || 'Bir hata oluştu.';
+            authError.style.display = 'block';
+            return;
+        }
+
+        if (isLoginMode) {
+            // Giriş başarılı, uygulamaya geç
+            startApp(data.user);
+        } else {
+            // Kayıt başarılı, login moduna geç
+            authTabs[0].click();
+            authError.style.color = '#10b981'; // Başarı rengi
+            authError.innerText = data.message;
+            authError.style.display = 'block';
+            setTimeout(() => { authError.style.color = '#ef4444'; authError.style.display = 'none'; }, 3000);
+        }
+    } catch (err) {
+        authError.innerText = 'Sunucuya bağlanılamadı.';
+        authError.style.display = 'block';
+    }
+});
+
+// Sayfa Yüklendiğinde Oturum Kontrolü
+async function checkAuthSession() {
+    try {
+        const res = await fetch('/api/me');
+        const data = await res.json();
+        if (data.loggedIn) {
+            startApp(data.user);
+        }
+    } catch (e) { console.log('Oturum kontrolü başarısız.'); }
+}
+
+async function startApp(user) {
+    myNickname = user.nickname;
+    sidebarNickname.innerText = user.nickname;
+    userAvatar.innerText = user.avatar || user.nickname.charAt(0).toUpperCase();
 
     // Önce özel odaları yükle
     await loadCustomRooms();
@@ -96,12 +168,15 @@ async function doLogin() {
     appLayout.classList.add('active');
 
     // Sunucuya adımızı kaydedelim
-    socket.emit('set nickname', nickname);
+    socket.emit('set nickname', myNickname);
 
     // Başlangıçta ana ekranı (dashboard) göster
     showDashboard();
     renderRecentRooms();
 }
+
+// Uygulama açıldığında oturumu kontrol et
+checkAuthSession();
 
 function showDashboard() {
     currentRoom = null;

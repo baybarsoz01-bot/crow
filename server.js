@@ -5,16 +5,117 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto'); // Davet kodu üretmek için
 
+const mongoose = require('mongoose');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const FacebookStrategy = require('passport-facebook').Strategy;
+const bcrypt = require('bcrypt');
+require('dotenv').config();
+
 const app = express();
 const server = http.createServer(app);
 // Resim yüklemeleri (base64) için payload limitini 10MB'a çıkarıyoruz
 const io = new Server(server, { maxHttpBufferSize: 1e7 });
 
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+const sessionMiddleware = session({
+    secret: process.env.SESSION_SECRET || 'crow_super_secret_key_123!',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // HTTPS kullanıyorsan true yap
+});
+app.use(sessionMiddleware);
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Socket.io ile Session paylaşımı
+io.engine.use(sessionMiddleware);
+
 // Statik dosyaları "public" klasöründen servis et
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ==============================
-// VERİ KALICILIĞI (JSON Dosya)
+// VERİTABANI BAĞLANTISI (MongoDB)
+// ==============================
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/crow')
+    .then(() => console.log('✅ MongoDB veritabanına bağlanıldı.'))
+    .catch(err => console.error('❌ MongoDB bağlantı hatası:', err));
+
+// Kullanıcı Şeması
+const userSchema = new mongoose.Schema({
+    nickname: { type: String, unique: true },
+    email: { type: String, unique: true },
+    password: { type: String },
+    googleId: { type: String },
+    facebookId: { type: String },
+    avatar: { type: String, default: '👤' },
+    nameColor: { type: String, default: '#6366f1' }
+});
+const User = mongoose.model('User', userSchema);
+
+// Passport Yerel Strateji
+passport.use(new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return done(null, false, { message: 'E-posta bulunamadı.' });
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return done(null, false, { message: 'Şifre hatalı.' });
+        return done(null, user);
+    } catch (err) { return done(err); }
+}));
+
+passport.serializeUser((user, done) => done(null, user.id));
+passport.deserializeUser(async (id, done) => {
+    try { const user = await User.findById(id); done(null, user); } catch(err) { done(err); }
+});
+
+// ==============================
+// KİMLİK DOĞRULAMA ROTALARI (API)
+// ==============================
+app.post('/api/register', async (req, res) => {
+    try {
+        const { nickname, email, password } = req.body;
+        if (!nickname || !email || !password) return res.status(400).json({error: 'Tüm alanları doldurun.'});
+        const existing = await User.findOne({ $or: [{ email }, { nickname }] });
+        if (existing) return res.status(400).json({error: 'E-posta veya Takma ad zaten kullanılıyor.'});
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = new User({ nickname, email, password: hashedPassword });
+        await user.save();
+        res.status(201).json({message: 'Kayıt başarılı! Lütfen giriş yapın.'});
+    } catch (err) { res.status(500).json({error: 'Sunucu hatası.'}); }
+});
+
+app.post('/api/login', (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+        if (err) return res.status(500).json({error: 'Sunucu hatası'});
+        if (!user) return res.status(401).json({error: info.message});
+        req.logIn(user, (err) => {
+            if (err) return res.status(500).json({error: 'Oturum açılamadı'});
+            res.json({ message: 'Giriş başarılı', user: { nickname: user.nickname, avatar: user.avatar } });
+        });
+    })(req, res, next);
+});
+
+app.get('/api/me', (req, res) => {
+    if (req.user) res.json({ loggedIn: true, user: { nickname: req.user.nickname, avatar: req.user.avatar, nameColor: req.user.nameColor } });
+    else res.json({ loggedIn: false });
+});
+
+app.post('/api/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) return res.status(500).json({error: 'Çıkış yapılamadı.'});
+        res.json({message: 'Çıkış yapıldı.'});
+    });
+});
+
+// ==============================
+// VERİ KALICILIĞI (Eski JSON Sistemi - Aşama aşama MongoDB'ye geçilecek)
 // ==============================
 const DATA_DIR = path.join(__dirname, 'data');
 const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
